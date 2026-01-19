@@ -1,4 +1,4 @@
-module github.com/keyenv/keyenv-go
+module github.com/keyenv/go-sdk
 
 go 1.21
 

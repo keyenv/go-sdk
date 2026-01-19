@@ -2,13 +2,13 @@
 
 Official Go SDK for [KeyEnv](https://keyenv.dev) - Secrets management made simple.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/keyenv/keyenv-go.svg)](https://pkg.go.dev/github.com/keyenv/keyenv-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/keyenv/keyenv-go)](https://goreportcard.com/report/github.com/keyenv/keyenv-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/keyenv/go-sdk.svg)](https://pkg.go.dev/github.com/keyenv/go-sdk)
+[![Go Report Card](https://goreportcard.com/badge/github.com/keyenv/go-sdk)](https://goreportcard.com/report/github.com/keyenv/go-sdk)
 
 ## Installation
 
 ```bash
-go get github.com/keyenv/keyenv-go
+go get github.com/keyenv/go-sdk
 ```
 
 ## Quick Start
@@ -20,7 +20,7 @@ import (
     "fmt"
     "os"
 
-    "github.com/keyenv/keyenv-go"
+    "github.com/keyenv/go-sdk"
 )
 
 func main() {
@@ -265,7 +265,7 @@ import (
     "net/http"
     "os"
 
-    "github.com/keyenv/keyenv-go"
+    "github.com/keyenv/go-sdk"
 )
 
 func main() {
@@ -295,7 +295,7 @@ import (
     "time"
 
     "github.com/aws/aws-lambda-go/lambda"
-    "github.com/keyenv/keyenv-go"
+    "github.com/keyenv/go-sdk"
 )
 
 var client *keyenv.Client
