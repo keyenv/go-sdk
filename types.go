@@ -41,26 +41,26 @@ type Project struct {
 
 // Environment represents a KeyEnv environment within a project.
 type Environment struct {
-	ID             string     `json:"id"`
-	Name           string     `json:"name"`
-	Description    string     `json:"description,omitempty"`
-	ProjectID      string     `json:"project_id"`
-	InheritsFromID *string    `json:"inherits_from_id,omitempty"`
-	Order          int        `json:"order"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description,omitempty"`
+	ProjectID      string    `json:"project_id"`
+	InheritsFromID *string   `json:"inherits_from_id,omitempty"`
+	Order          int       `json:"order"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // Secret represents a secret's metadata without the value.
 type Secret struct {
-	ID            string     `json:"id"`
-	Key           string     `json:"key"`
-	Description   *string    `json:"description,omitempty"`
-	EnvironmentID string     `json:"environment_id"`
-	SecretType    string     `json:"secret_type,omitempty"`
-	Version       int        `json:"version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID            string    `json:"id"`
+	Key           string    `json:"key"`
+	Description   *string   `json:"description,omitempty"`
+	EnvironmentID string    `json:"environment_id"`
+	SecretType    string    `json:"secret_type,omitempty"`
+	Version       int       `json:"version"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // SecretWithValue represents a secret including its decrypted value.
@@ -154,13 +154,13 @@ type Team struct {
 
 // ServiceToken represents information about a service token.
 type ServiceToken struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	ProjectID   string    `json:"project_id"`
-	ProjectName string    `json:"project_name,omitempty"`
-	Permissions []string  `json:"permissions"`
+	ID          string     `json:"id"`
+	Name        string     `json:"name"`
+	ProjectID   string     `json:"project_id"`
+	ProjectName string     `json:"project_name,omitempty"`
+	Permissions []string   `json:"permissions"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // CurrentUserResponse contains information about the current authenticated user or token.
