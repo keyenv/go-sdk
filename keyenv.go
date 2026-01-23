@@ -512,19 +512,19 @@ func (c *Client) DeletePermission(ctx context.Context, projectID, environment, u
 
 // BulkSetPermissions sets multiple permissions at once.
 func (c *Client) BulkSetPermissions(ctx context.Context, projectID, environment string, permissions []PermissionInput) error {
-	path := fmt.Sprintf("/projects/%s/environments/%s/permissions/bulk", projectID, environment)
+	path := fmt.Sprintf("/projects/%s/environments/%s/permissions", projectID, environment)
 
 	body := map[string]interface{}{
 		"permissions": permissions,
 	}
 
-	_, err := c.post(ctx, path, body)
+	_, err := c.put(ctx, path, body)
 	return err
 }
 
 // GetMyPermissions returns the current user's permissions for a project.
 func (c *Client) GetMyPermissions(ctx context.Context, projectID string) (*MyPermissionsResponse, error) {
-	path := fmt.Sprintf("/projects/%s/permissions/me", projectID)
+	path := fmt.Sprintf("/projects/%s/my-permissions", projectID)
 	data, err := c.get(ctx, path)
 	if err != nil {
 		return nil, err
@@ -540,7 +540,7 @@ func (c *Client) GetMyPermissions(ctx context.Context, projectID string) (*MyPer
 
 // GetProjectDefaults returns the default permissions for a project.
 func (c *Client) GetProjectDefaults(ctx context.Context, projectID string) ([]DefaultPermission, error) {
-	path := fmt.Sprintf("/projects/%s/defaults", projectID)
+	path := fmt.Sprintf("/projects/%s/permissions/defaults", projectID)
 	data, err := c.get(ctx, path)
 	if err != nil {
 		return nil, err
@@ -558,7 +558,7 @@ func (c *Client) GetProjectDefaults(ctx context.Context, projectID string) ([]De
 
 // SetProjectDefaults sets the default permissions for a project.
 func (c *Client) SetProjectDefaults(ctx context.Context, projectID string, defaults []DefaultPermission) error {
-	path := fmt.Sprintf("/projects/%s/defaults", projectID)
+	path := fmt.Sprintf("/projects/%s/permissions/defaults", projectID)
 
 	body := map[string]interface{}{
 		"defaults": defaults,
