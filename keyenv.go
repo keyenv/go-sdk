@@ -219,6 +219,11 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*CurrentUserResponse, erro
 	return &resp, nil
 }
 
+// ValidateToken validates the token and returns user info.
+func (c *Client) ValidateToken(ctx context.Context) (*CurrentUserResponse, error) {
+	return c.GetCurrentUser(ctx)
+}
+
 // ListProjects returns all projects accessible to the current user or service token.
 func (c *Client) ListProjects(ctx context.Context) ([]Project, error) {
 	data, err := c.get(ctx, "/projects")
@@ -251,6 +256,32 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, er
 	return &project, nil
 }
 
+// CreateProject creates a new project.
+func (c *Client) CreateProject(ctx context.Context, teamID, name string) (*Project, error) {
+	body := map[string]string{
+		"team_id": teamID,
+		"name":    name,
+	}
+
+	data, err := c.post(ctx, "/projects", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var project Project
+	if err := json.Unmarshal(data, &project); err != nil {
+		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
+	}
+
+	return &project, nil
+}
+
+// DeleteProject deletes a project.
+func (c *Client) DeleteProject(ctx context.Context, projectID string) error {
+	_, err := c.delete(ctx, "/projects/"+projectID)
+	return err
+}
+
 // ListEnvironments returns all environments in a project.
 func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Environment, error) {
 	data, err := c.get(ctx, "/projects/"+projectID+"/environments")
@@ -266,6 +297,36 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 	}
 
 	return resp.Environments, nil
+}
+
+// CreateEnvironment creates a new environment in a project.
+func (c *Client) CreateEnvironment(ctx context.Context, projectID, name string, inheritsFrom *string) (*Environment, error) {
+	body := map[string]interface{}{
+		"name": name,
+	}
+	if inheritsFrom != nil {
+		body["inherits_from"] = *inheritsFrom
+	}
+
+	path := fmt.Sprintf("/projects/%s/environments", projectID)
+	data, err := c.post(ctx, path, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var env Environment
+	if err := json.Unmarshal(data, &env); err != nil {
+		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
+	}
+
+	return &env, nil
+}
+
+// DeleteEnvironment deletes an environment from a project.
+func (c *Client) DeleteEnvironment(ctx context.Context, projectID, environment string) error {
+	path := fmt.Sprintf("/projects/%s/environments/%s", projectID, environment)
+	_, err := c.delete(ctx, path)
+	return err
 }
 
 // ListSecrets returns secret keys (without values) for an environment.
