@@ -1,0 +1,25 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run tests
+        run: go test -race -v ./...
+
+      - name: Trigger Go proxy
+        run: |
+          # Request the module from proxy.golang.org to cache it
+          VERSION="${GITHUB_REF#refs/tags/}"
+          curl -s "https://proxy.golang.org/github.com/keyenv/go-sdk/@v/${VERSION}.info" || true
+          echo "Module version ${VERSION} requested from Go proxy"
