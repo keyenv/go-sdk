@@ -164,10 +164,36 @@ type ServiceToken struct {
 }
 
 // CurrentUserResponse contains information about the current authenticated user or token.
+// For service tokens, it returns a flat structure with token info.
+// For users, it returns the user profile with team memberships.
 type CurrentUserResponse struct {
-	Type         string        `json:"type"` // "user" or "service_token"
+	// Common fields
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Auth type: "service_token" or "user"
+	AuthType string `json:"auth_type,omitempty"`
+
+	// Service token fields (when auth_type is "service_token")
+	TeamID     string   `json:"team_id,omitempty"`
+	ProjectIDs []string `json:"project_ids,omitempty"`
+	Scopes     []string `json:"scopes,omitempty"`
+
+	// User fields (when auth_type is "user" or not a service token)
+	Email     string `json:"email,omitempty"`
+	Name      string `json:"name,omitempty"`
+	ClerkID   string `json:"clerk_id,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+
+	// Legacy fields for backward compatibility
+	Type         string        `json:"type,omitempty"` // Deprecated: use AuthType
 	User         *User         `json:"user,omitempty"`
 	ServiceToken *ServiceToken `json:"service_token,omitempty"`
+}
+
+// IsServiceToken returns true if this response represents a service token.
+func (r *CurrentUserResponse) IsServiceToken() bool {
+	return r.AuthType == "service_token" || r.Type == "service_token"
 }
 
 // cacheEntry represents a cached value with expiration.

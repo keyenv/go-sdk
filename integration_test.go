@@ -58,14 +58,18 @@ func TestIntegration_ValidateToken(t *testing.T) {
 		t.Fatal("Expected user response, got nil")
 	}
 
-	// Service token should have Type = "service_token"
-	if user.Type != "service_token" && user.Type != "user" {
-		t.Errorf("Expected type 'service_token' or 'user', got %q", user.Type)
+	// Service token should have AuthType = "service_token"
+	authType := user.AuthType
+	if authType == "" {
+		authType = user.Type // fallback to legacy field
+	}
+	if authType != "service_token" && authType != "user" && authType != "" {
+		t.Errorf("Expected auth_type 'service_token' or 'user', got %q", authType)
 	}
 
-	t.Logf("Authenticated as: %s", user.Type)
-	if user.ServiceToken != nil {
-		t.Logf("Service token name: %s", user.ServiceToken.Name)
+	t.Logf("Authenticated as: %s (ID: %s)", authType, user.ID)
+	if user.IsServiceToken() {
+		t.Logf("Service token scopes: %v", user.Scopes)
 	}
 }
 

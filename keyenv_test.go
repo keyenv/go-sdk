@@ -182,10 +182,13 @@ func TestGetSecret(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/projects/proj-1/environments/production/secrets/DATABASE_URL", r.URL.Path)
 
+		// API returns {"secret": {...}} wrapper
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"id":    "secret-1",
-			"key":   "DATABASE_URL",
-			"value": "postgres://localhost/db",
+			"secret": map[string]interface{}{
+				"id":    "secret-1",
+				"key":   "DATABASE_URL",
+				"value": "postgres://localhost/db",
+			},
 		})
 	}))
 	defer server.Close()

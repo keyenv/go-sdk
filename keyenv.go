@@ -206,7 +206,7 @@ func (c *Client) ClearAllCache() {
 
 // GetCurrentUser returns information about the current authenticated user or service token.
 func (c *Client) GetCurrentUser(ctx context.Context) (*CurrentUserResponse, error) {
-	data, err := c.get(ctx, "/me")
+	data, err := c.get(ctx, "/users/me")
 	if err != nil {
 		return nil, err
 	}
@@ -398,12 +398,14 @@ func (c *Client) GetSecret(ctx context.Context, projectID, environment, key stri
 		return nil, err
 	}
 
-	var secret SecretWithValue
-	if err := json.Unmarshal(data, &secret); err != nil {
+	var resp struct {
+		Secret SecretWithValue `json:"secret"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return &secret, nil
+	return &resp.Secret, nil
 }
 
 // SetSecret creates or updates a secret.
