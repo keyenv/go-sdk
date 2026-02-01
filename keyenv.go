@@ -48,6 +48,7 @@ func New(config Config) (*Client, error) {
 		baseURL = DefaultBaseURL
 	}
 	baseURL = strings.TrimSuffix(baseURL, "/")
+	baseURL = strings.TrimSuffix(baseURL, "/api/v1")
 
 	timeout := config.Timeout
 	if timeout == 0 {
