@@ -65,9 +65,12 @@ func New(config Config) (*Client, error) {
 	}, nil
 }
 
+// apiPrefix is the API version prefix for all requests.
+const apiPrefix = "/api/v1"
+
 // request makes an HTTP request to the KeyEnv API.
 func (c *Client) request(ctx context.Context, method, path string, body interface{}) ([]byte, error) {
-	url := c.baseURL + path
+	url := c.baseURL + apiPrefix + path
 
 	var reqBody io.Reader
 	if body != nil {
@@ -163,13 +166,22 @@ func (c *Client) getCached(key string) (interface{}, bool) {
 	}
 
 	if time.Now().After(entry.expiresAt) {
+		// Schedule lazy cleanup: delete expired entry on next write
+		go func() {
+			c.cacheMu.Lock()
+			defer c.cacheMu.Unlock()
+			// Re-check expiration under write lock
+			if e, ok := c.cache[key]; ok && time.Now().After(e.expiresAt) {
+				delete(c.cache, key)
+			}
+		}()
 		return nil, false
 	}
 
 	return entry.data, true
 }
 
-// setCache stores a value in the cache.
+// setCache stores a value in the cache and prunes expired entries.
 func (c *Client) setCache(key string, data interface{}) {
 	if c.cacheTTL == 0 {
 		return
@@ -178,9 +190,18 @@ func (c *Client) setCache(key string, data interface{}) {
 	c.cacheMu.Lock()
 	defer c.cacheMu.Unlock()
 
+	now := time.Now()
+
+	// Prune expired entries to prevent memory leaks
+	for k, entry := range c.cache {
+		if now.After(entry.expiresAt) {
+			delete(c.cache, k)
+		}
+	}
+
 	c.cache[key] = cacheEntry{
 		data:      data,
-		expiresAt: time.Now().Add(c.cacheTTL),
+		expiresAt: now.Add(c.cacheTTL),
 	}
 }
 

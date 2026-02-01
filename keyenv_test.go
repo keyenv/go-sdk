@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,7 +69,7 @@ func TestNew(t *testing.T) {
 
 func TestListProjects(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 
@@ -102,7 +103,7 @@ func TestListProjects(t *testing.T) {
 
 func TestGetProject(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects/proj-1", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects/proj-1", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -130,7 +131,7 @@ func TestGetProject(t *testing.T) {
 
 func TestExportSecrets(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects/proj-1/environments/production/secrets/export", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects/proj-1/environments/production/secrets/export", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -180,7 +181,7 @@ func TestExportSecretsAsMap(t *testing.T) {
 
 func TestGetSecret(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects/proj-1/environments/production/secrets/DATABASE_URL", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects/proj-1/environments/production/secrets/DATABASE_URL", r.URL.Path)
 
 		// API returns {"secret": {...}} wrapper
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -210,7 +211,7 @@ func TestSetSecret(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		if r.Method == "PUT" {
-			assert.Equal(t, "/projects/proj-1/environments/production/secrets/API_KEY", r.URL.Path)
+			assert.Equal(t, "/api/v1/projects/proj-1/environments/production/secrets/API_KEY", r.URL.Path)
 
 			var body map[string]interface{}
 			json.NewDecoder(r.Body).Decode(&body)
@@ -238,7 +239,7 @@ func TestSetSecret(t *testing.T) {
 
 func TestDeleteSecret(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects/proj-1/environments/production/secrets/OLD_KEY", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects/proj-1/environments/production/secrets/OLD_KEY", r.URL.Path)
 		assert.Equal(t, "DELETE", r.Method)
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -311,7 +312,7 @@ func TestGenerateEnvFile(t *testing.T) {
 
 func TestBulkImport(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/projects/proj-1/environments/development/secrets/bulk", r.URL.Path)
+		assert.Equal(t, "/api/v1/projects/proj-1/environments/development/secrets/bulk", r.URL.Path)
 		assert.Equal(t, "POST", r.Method)
 
 		var body map[string]interface{}
@@ -439,6 +440,83 @@ func TestCaching(t *testing.T) {
 	_, err = client.ExportSecrets(context.Background(), "proj-1", "production")
 	require.NoError(t, err)
 	assert.Equal(t, 2, callCount)
+}
+
+func TestAPIPrefix(t *testing.T) {
+	t.Run("all requests include /api/v1 prefix", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.True(t, strings.HasPrefix(r.URL.Path, "/api/v1/"),
+				"Expected path to start with /api/v1/, got: %s", r.URL.Path)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"id": "user-1", "email": "test@test.com",
+			})
+		}))
+		defer server.Close()
+
+		client, err := New(Config{Token: "test-token", BaseURL: server.URL})
+		require.NoError(t, err)
+		_, _ = client.GetCurrentUser(context.Background())
+	})
+}
+
+func TestGenerateEnvFileDollarEscaping(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"secrets": []map[string]interface{}{
+				{"key": "DOLLAR_VAR", "value": "price=$100"},
+				{"key": "SIMPLE", "value": "no_special"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(Config{Token: "test-token", BaseURL: server.URL})
+	require.NoError(t, err)
+
+	content, err := client.GenerateEnvFile(context.Background(), "proj-1", "production")
+	require.NoError(t, err)
+	assert.Contains(t, content, `DOLLAR_VAR="price=\$100"`)
+	assert.Contains(t, content, "SIMPLE=no_special\n")
+}
+
+func TestCacheExpiredEntryEviction(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"secrets": []map[string]interface{}{
+				{"key": "VAR", "value": "value"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(Config{
+		Token:    "test-token",
+		BaseURL:  server.URL,
+		CacheTTL: 50 * time.Millisecond,
+	})
+	require.NoError(t, err)
+
+	// First call - populates cache
+	_, err = client.ExportSecrets(context.Background(), "proj-1", "production")
+	require.NoError(t, err)
+	assert.Equal(t, 1, callCount)
+
+	// Wait for cache to expire
+	time.Sleep(100 * time.Millisecond)
+
+	// Second call - expired entry should be cleaned up and re-fetched
+	_, err = client.ExportSecrets(context.Background(), "proj-1", "production")
+	require.NoError(t, err)
+	assert.Equal(t, 2, callCount)
+
+	// Verify expired entries are cleaned from cache map
+	client.cacheMu.RLock()
+	for _, entry := range client.cache {
+		assert.True(t, time.Now().Before(entry.expiresAt), "Found expired entry still in cache")
+	}
+	client.cacheMu.RUnlock()
 }
 
 func TestCachingDisabled(t *testing.T) {
