@@ -544,6 +544,158 @@ func TestIntegration_ErrorHandling(t *testing.T) {
 	})
 }
 
+func TestIntegration_SecretHistory(t *testing.T) {
+	client, err := New(getTestConfig(t))
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	projectID := getTestProject(t)
+	environment := "development"
+
+	testKey := uniqueKey("HISTORY_TEST")
+	defer func() {
+		_ = client.DeleteSecret(ctx, projectID, environment, testKey)
+	}()
+
+	// Create secret
+	err = client.SetSecret(ctx, projectID, environment, testKey, "version1")
+	if err != nil {
+		t.Fatalf("SetSecret (create) failed: %v", err)
+	}
+
+	// Update twice
+	err = client.SetSecret(ctx, projectID, environment, testKey, "version2")
+	if err != nil {
+		t.Fatalf("SetSecret (update 1) failed: %v", err)
+	}
+
+	err = client.SetSecret(ctx, projectID, environment, testKey, "version3")
+	if err != nil {
+		t.Fatalf("SetSecret (update 2) failed: %v", err)
+	}
+
+	// Get history
+	history, err := client.GetSecretHistory(ctx, projectID, environment, testKey)
+	if err != nil {
+		t.Fatalf("GetSecretHistory failed: %v", err)
+	}
+
+	if len(history) < 2 {
+		t.Errorf("Expected at least 2 history entries, got %d", len(history))
+	}
+
+	t.Logf("Secret %s has %d history entries", testKey, len(history))
+	for _, h := range history {
+		t.Logf("  - version %d, change_type=%s, at=%s", h.Version, h.ChangeType, h.CreatedAt)
+	}
+}
+
+func TestIntegration_LoadEnv(t *testing.T) {
+	client, err := New(getTestConfig(t))
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	projectID := getTestProject(t)
+	environment := "development"
+
+	testKey := uniqueKey("LOADENV_TEST")
+	testValue := "loadenv_value_" + time.Now().Format("20060102150405")
+	defer func() {
+		_ = client.DeleteSecret(ctx, projectID, environment, testKey)
+		os.Unsetenv(testKey)
+	}()
+
+	// Create a secret
+	err = client.SetSecret(ctx, projectID, environment, testKey, testValue)
+	if err != nil {
+		t.Fatalf("SetSecret failed: %v", err)
+	}
+
+	// Load secrets into environment variables
+	count, err := client.LoadEnv(ctx, projectID, environment)
+	if err != nil {
+		t.Fatalf("LoadEnv failed: %v", err)
+	}
+
+	if count == 0 {
+		t.Error("Expected LoadEnv to load at least one secret")
+	}
+
+	// Verify our test key was loaded
+	envValue := os.Getenv(testKey)
+	if envValue != testValue {
+		t.Errorf("Expected os.Getenv(%q) = %q, got %q", testKey, testValue, envValue)
+	}
+
+	t.Logf("LoadEnv loaded %d secrets, verified %s=%s", count, testKey, testValue)
+}
+
+func TestIntegration_SpecialCharacters(t *testing.T) {
+	client, err := New(getTestConfig(t))
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	projectID := getTestProject(t)
+	environment := "development"
+
+	tests := []struct {
+		name  string
+		key   string
+		value string
+	}{
+		{
+			name:  "ConnectionString",
+			key:   uniqueKey("SPECIAL_CONNSTR"),
+			value: "postgresql://user:p@ss@localhost:5432/db?sslmode=require",
+		},
+		{
+			name:  "Multiline",
+			key:   uniqueKey("SPECIAL_MULTILINE"),
+			value: "line1\nline2\nline3",
+		},
+		{
+			name:  "JSON",
+			key:   uniqueKey("SPECIAL_JSON"),
+			value: `{"key":"value","nested":{"a":1}}`,
+		},
+	}
+
+	// Cleanup all keys
+	defer func() {
+		for _, tc := range tests {
+			_ = client.DeleteSecret(ctx, projectID, environment, tc.key)
+		}
+	}()
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create secret with special characters
+			err := client.SetSecret(ctx, projectID, environment, tc.key, tc.value)
+			if err != nil {
+				t.Fatalf("SetSecret failed: %v", err)
+			}
+
+			// Read it back
+			secret, err := client.GetSecret(ctx, projectID, environment, tc.key)
+			if err != nil {
+				t.Fatalf("GetSecret failed: %v", err)
+			}
+
+			if secret.Value != tc.value {
+				t.Errorf("Value mismatch:\n  expected: %q\n  got:      %q", tc.value, secret.Value)
+			}
+
+			t.Logf("Verified %s: %q round-trips correctly", tc.key, tc.value)
+		})
+	}
+}
+
 func TestIntegration_MultipleEnvironments(t *testing.T) {
 	client, err := New(getTestConfig(t))
 	if err != nil {
