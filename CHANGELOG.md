@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/keyenv/go-sdk/compare/v1.2.0...v1.2.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* remove trailing '/api/v1' from baseURL in New function ([7edbc1f](https://github.com/keyenv/go-sdk/commit/7edbc1f051f7ea4e5a139071d948ae443c1ab486))
+* security and correctness fixes with test coverage ([adc532c](https://github.com/keyenv/go-sdk/commit/adc532c169fc2f01751fc61413993b6e7df99836))
+
 ## [1.2.0](https://github.com/keyenv/go-sdk/compare/v1.1.0...v1.2.0) (2026-01-26)
 
 
