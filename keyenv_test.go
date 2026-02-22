@@ -107,11 +107,13 @@ func TestGetProject(t *testing.T) {
 		assert.Equal(t, "GET", r.Method)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"id":   "proj-1",
-			"name": "Project 1",
-			"environments": []map[string]interface{}{
-				{"id": "env-1", "name": "development"},
-				{"id": "env-2", "name": "production"},
+			"data": map[string]interface{}{
+				"id":   "proj-1",
+				"name": "Project 1",
+				"environments": []map[string]interface{}{
+					{"id": "env-1", "name": "development"},
+					{"id": "env-2", "name": "production"},
+				},
 			},
 		})
 	}))

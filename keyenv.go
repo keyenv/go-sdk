@@ -233,12 +233,14 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*CurrentUserResponse, erro
 		return nil, err
 	}
 
-	var resp CurrentUserResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
+	var envelope struct {
+		Data CurrentUserResponse `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return &resp, nil
+	return &envelope.Data, nil
 }
 
 // ValidateToken validates the token and returns user info.
@@ -270,12 +272,14 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, er
 		return nil, err
 	}
 
-	var project Project
-	if err := json.Unmarshal(data, &project); err != nil {
+	var envelope struct {
+		Data Project `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return &project, nil
+	return &envelope.Data, nil
 }
 
 // CreateProject creates a new project.
@@ -290,12 +294,14 @@ func (c *Client) CreateProject(ctx context.Context, teamID, name string) (*Proje
 		return nil, err
 	}
 
-	var project Project
-	if err := json.Unmarshal(data, &project); err != nil {
+	var envelope struct {
+		Data Project `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return &project, nil
+	return &envelope.Data, nil
 }
 
 // DeleteProject deletes a project.
@@ -336,10 +342,13 @@ func (c *Client) CreateEnvironment(ctx context.Context, projectID, name string, 
 		return nil, err
 	}
 
-	var env Environment
-	if err := json.Unmarshal(data, &env); err != nil {
+	var envelope struct {
+		Data Environment `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
+	env := envelope.Data
 
 	return &env, nil
 }
