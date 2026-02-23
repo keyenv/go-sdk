@@ -74,7 +74,7 @@ func TestListProjects(t *testing.T) {
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"projects": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{
 					"id":   "proj-1",
 					"name": "Project 1",
@@ -137,7 +137,7 @@ func TestExportSecrets(t *testing.T) {
 		assert.Equal(t, "GET", r.Method)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "DATABASE_URL", "value": "postgres://localhost/db"},
 				{"key": "API_KEY", "value": "sk_test_123"},
 			},
@@ -161,7 +161,7 @@ func TestExportSecrets(t *testing.T) {
 func TestExportSecretsAsMap(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "DATABASE_URL", "value": "postgres://localhost/db"},
 				{"key": "API_KEY", "value": "sk_test_123"},
 			},
@@ -185,9 +185,9 @@ func TestGetSecret(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/projects/proj-1/environments/production/secrets/DATABASE_URL", r.URL.Path)
 
-		// API returns {"secret": {...}} wrapper
+		// API returns {"data": {...}} wrapper
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secret": map[string]interface{}{
+			"data": map[string]interface{}{
 				"id":    "secret-1",
 				"key":   "DATABASE_URL",
 				"value": "postgres://localhost/db",
@@ -260,7 +260,7 @@ func TestDeleteSecret(t *testing.T) {
 func TestLoadEnv(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "TEST_VAR_1", "value": "value1"},
 				{"key": "TEST_VAR_2", "value": "value2"},
 			},
@@ -290,7 +290,7 @@ func TestLoadEnv(t *testing.T) {
 func TestGenerateEnvFile(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "SIMPLE", "value": "simple_value"},
 				{"key": "WITH_SPACES", "value": "value with spaces"},
 				{"key": "WITH_QUOTES", "value": "value \"quoted\""},
@@ -322,9 +322,11 @@ func TestBulkImport(t *testing.T) {
 		assert.True(t, body["overwrite"].(bool))
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"created": 2,
-			"updated": 1,
-			"skipped": 0,
+			"data": map[string]interface{}{
+				"created": 2,
+				"updated": 1,
+				"skipped": 0,
+			},
 		})
 	}))
 	defer server.Close()
@@ -411,7 +413,7 @@ func TestCaching(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "CACHED_VAR", "value": "cached_value"},
 			},
 		})
@@ -464,7 +466,7 @@ func TestAPIPrefix(t *testing.T) {
 func TestGenerateEnvFileDollarEscaping(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "DOLLAR_VAR", "value": "price=$100"},
 				{"key": "SIMPLE", "value": "no_special"},
 			},
@@ -486,7 +488,7 @@ func TestCacheExpiredEntryEviction(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "VAR", "value": "value"},
 			},
 		})
@@ -526,7 +528,7 @@ func TestCachingDisabled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"secrets": []map[string]interface{}{
+			"data": []map[string]interface{}{
 				{"key": "VAR", "value": "value"},
 			},
 		})

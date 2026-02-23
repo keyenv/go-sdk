@@ -255,14 +255,14 @@ func (c *Client) ListProjects(ctx context.Context) ([]Project, error) {
 		return nil, err
 	}
 
-	var resp struct {
-		Projects []Project `json:"projects"`
+	var envelope struct {
+		Data []Project `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.Projects, nil
+	return envelope.Data, nil
 }
 
 // GetProject returns a project by ID including its environments.
@@ -317,14 +317,14 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 		return nil, err
 	}
 
-	var resp struct {
-		Environments []Environment `json:"environments"`
+	var envelope struct {
+		Data []Environment `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.Environments, nil
+	return envelope.Data, nil
 }
 
 // CreateEnvironment creates a new environment in a project.
@@ -368,14 +368,14 @@ func (c *Client) ListSecrets(ctx context.Context, projectID, environment string)
 		return nil, err
 	}
 
-	var resp struct {
-		Secrets []SecretWithInheritance `json:"secrets"`
+	var envelope struct {
+		Data []SecretWithInheritance `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.Secrets, nil
+	return envelope.Data, nil
 }
 
 // ExportSecrets returns all secrets with their values for an environment.
@@ -393,17 +393,17 @@ func (c *Client) ExportSecrets(ctx context.Context, projectID, environment strin
 		return nil, err
 	}
 
-	var resp struct {
-		Secrets []SecretWithValueAndInheritance `json:"secrets"`
+	var envelope struct {
+		Data []SecretWithValueAndInheritance `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
 	// Store in cache
-	c.setCache(cacheKey, resp.Secrets)
+	c.setCache(cacheKey, envelope.Data)
 
-	return resp.Secrets, nil
+	return envelope.Data, nil
 }
 
 // ExportSecretsAsMap returns secrets as a key-value map.
@@ -429,14 +429,14 @@ func (c *Client) GetSecret(ctx context.Context, projectID, environment, key stri
 		return nil, err
 	}
 
-	var resp struct {
-		Secret SecretWithValue `json:"secret"`
+	var envelope struct {
+		Data SecretWithValue `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return &resp.Secret, nil
+	return &envelope.Data, nil
 }
 
 // SetSecret creates or updates a secret.
@@ -511,15 +511,17 @@ func (c *Client) BulkImport(ctx context.Context, projectID, environment string, 
 		return nil, err
 	}
 
-	var result BulkImportResult
-	if err := json.Unmarshal(data, &result); err != nil {
+	var envelope struct {
+		Data BulkImportResult `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
 	// Clear cache for this environment
 	c.ClearCache(projectID, environment)
 
-	return &result, nil
+	return &envelope.Data, nil
 }
 
 // LoadEnv loads secrets into environment variables.
@@ -575,14 +577,14 @@ func (c *Client) ListPermissions(ctx context.Context, projectID, environment str
 		return nil, err
 	}
 
-	var resp struct {
-		Permissions []Permission `json:"permissions"`
+	var envelope struct {
+		Data []Permission `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.Permissions, nil
+	return envelope.Data, nil
 }
 
 // SetPermission sets a user's permission for an environment.
@@ -640,14 +642,14 @@ func (c *Client) GetProjectDefaults(ctx context.Context, projectID string) ([]De
 		return nil, err
 	}
 
-	var resp struct {
-		Defaults []DefaultPermission `json:"defaults"`
+	var envelope struct {
+		Data []DefaultPermission `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.Defaults, nil
+	return envelope.Data, nil
 }
 
 // SetProjectDefaults sets the default permissions for a project.
@@ -670,12 +672,12 @@ func (c *Client) GetSecretHistory(ctx context.Context, projectID, environment, k
 		return nil, err
 	}
 
-	var resp struct {
-		History []SecretHistory `json:"history"`
+	var envelope struct {
+		Data []SecretHistory `json:"data"`
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
+	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, fmt.Errorf("keyenv: failed to parse response: %w", err)
 	}
 
-	return resp.History, nil
+	return envelope.Data, nil
 }
